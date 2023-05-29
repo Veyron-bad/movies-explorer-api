@@ -4,12 +4,14 @@ const { CREATED } = require('../utils/resStatus');
 const ErrorNotFound = require('../errors/errorNotFound');
 const ErrorForbidden = require('../errors/errorForbidden');
 const ErrorBadRequest = require('../errors/errorBadRequest');
+const { messageErrorValidation, messageMovieNotFound, messageErrorForbidden } = require('../utils/errorMessage');
+const { messageSuccessDeleteMovie } = require('../utils/resMessage');
 
 const { ValidationError, CastError } = mongoose.Error;
 
 // Получаем массив всех фильмов
 const getMovies = (req, res, next) => {
-  Movie.find({})
+  Movie.find({ owner: req.user._id })
     .populate(['owner'])
     .then((movie) => res.send(movie))
     .catch(next);
@@ -49,7 +51,7 @@ const createMovies = (req, res, next) => {
     .then((movie) => res.status(CREATED).send(movie))
     .catch((err) => {
       if (err instanceof ValidationError) {
-        next(new ErrorBadRequest('Ошибка валидации'));
+        next(new ErrorBadRequest(messageErrorValidation));
       } else {
         next(err);
       }
@@ -60,25 +62,22 @@ const createMovies = (req, res, next) => {
 const deleteMovies = (req, res, next) => {
   const { movieId } = req.params;
   Movie.findById(movieId)
-    // eslint-disable-next-line consistent-return
     .then((movie) => {
       if (!movie) {
-        return next(new ErrorNotFound('Фильм не найдена'));
+        return next(new ErrorNotFound(messageMovieNotFound));
       }
-      // Проверям пренадлежность фильма текущему пользователю
-      if (movie.owner.valueOf() === req.user._id) {
-        movie.deleteOne()
-          .then(() => {
-            res.send({ message: 'Фильм удален' });
-          })
-          .catch(next);
-      } else {
-        next(new ErrorForbidden('Необходимо авторизоваться'));
+      if (movie.owner.valueOf() !== req.user._id) {
+        return next(new ErrorForbidden(messageErrorForbidden));
       }
+      return movie.deleteOne()
+        .then(() => {
+          res.send({ message: messageSuccessDeleteMovie });
+        })
+        .catch(next);
     })
     .catch((err) => {
       if (err instanceof CastError) {
-        next(new ErrorBadRequest('Ошибка валидации'));
+        next(new ErrorBadRequest(messageErrorValidation));
       } else {
         next(err);
       }

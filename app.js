@@ -24,12 +24,12 @@ mongoose.connect(MONGO_URL, { useNewUrlParser: true });
 
 app.use(handlerCors);
 
+app.use(requestLogger);
+
 app.use(limiter);
 app.use(helmet());
 
 const { PORT } = require('./config');
-
-app.use(requestLogger);
 
 app.use('/', rootRoute);
 

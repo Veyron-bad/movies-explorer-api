@@ -4,11 +4,13 @@ const jwt = require('jsonwebtoken');
 const User = require('../model/user');
 const ErrorMongoose = require('../errors/errorMongoose');
 const ErrorBadRequest = require('../errors/errorBadRequest');
-const ErrorUnauthorized = require('../errors/errUnauthorized');
 
 const { ValidationError } = mongoose.Error;
 const { CREATED } = require('../utils/resStatus');
 const { NODE_EVN, JWT_SECRET } = require('../config');
+const ErrorNotFound = require('../errors/errorNotFound');
+const { messageErrorDublicationEmail, messageErrorValidation, messageUserNotFound } = require('../utils/errorMessage');
+const { messageLogout } = require('../utils/resMessage');
 
 // Регистрация пользователя
 const registration = (req, res, next) => {
@@ -23,9 +25,9 @@ const registration = (req, res, next) => {
     })
     .catch((err) => {
       if (err.code === 11000) {
-        return next(new ErrorMongoose('Пользователь с таким email уже зарегистирован'));
+        return next(new ErrorMongoose(messageErrorDublicationEmail));
       } if (err instanceof ValidationError) {
-        return next(new ErrorBadRequest('Ошибка валидации'));
+        return next(new ErrorBadRequest(messageErrorValidation));
       }
       return next(err);
     });
@@ -45,7 +47,7 @@ const login = (req, res, next) => {
       res.cookie('jwt', token, {
         maxAge: 3600000 * 24 * 7,
         httpOnly: true,
-        sameSait: true,
+        sameSite: true,
       });
       res.send({ token });
     })
@@ -57,7 +59,7 @@ const getUserInfo = (req, res, next) => {
   User.findById(req.user._id)
     .then((user) => {
       if (!user) {
-        return next(new ErrorUnauthorized('Необходимо авторизоваться'));
+        return next(new ErrorNotFound(messageUserNotFound));
       }
       return res.send(user);
     })
@@ -74,9 +76,9 @@ const updateUserInfo = (req, res, next) => {
     })
     .catch((err) => {
       if (err.code === 11000) {
-        next(new ErrorMongoose('Пользователь с таким email уже зарегистрирован'));
+        next(new ErrorMongoose(messageErrorDublicationEmail));
       } else if (err instanceof ValidationError) {
-        next(new ErrorBadRequest('Ошибка валидации'));
+        next(new ErrorBadRequest(messageErrorValidation));
       } else {
         next(err);
       }
@@ -85,7 +87,7 @@ const updateUserInfo = (req, res, next) => {
 
 // Выход с приложения
 const logout = (req, res) => {
-  res.clearCookie('jwt').send({ message: 'Всего хорошего!' });
+  res.clearCookie('jwt').send({ message: messageLogout });
 };
 
 module.exports = {
