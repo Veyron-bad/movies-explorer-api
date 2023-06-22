@@ -88,7 +88,11 @@ const updateUserInfo = (req, res, next) => {
 
 // Выход с приложения
 const logout = (req, res) => {
-  res.clearCookie('jwt').send({ message: messageLogout });
+  res.clearCookie('jwt', {
+    httpOnly: true,
+    sameSite: 'none',
+    secure: true,
+  }).send({ message: messageLogout });
 };
 
 module.exports = {
