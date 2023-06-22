@@ -1,7 +1,7 @@
 const allowedCors = [
   'http://localhost:3000',
-  'http://api.veyronbad.nomoredomains.rocks',
-  'https://api.veyronbad.nomoredomains.rocks',
+  'http://veyronbad.nomoredomains.rocks',
+  'https://veyronbad.nomoredomains.rocks',
 ];
 
 const handlerCors = (req, res, next) => {
